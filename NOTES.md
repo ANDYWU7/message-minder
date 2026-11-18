@@ -2,6 +2,8 @@ After each save point, push it to GitHub.
 
 The AI key comes from getKey() in server/minddo-key.cjs.
 
+The available model with "luna" in its name is gpt-5.6-luna (verified through OpenAI's models endpoint on November 17, 2026).
+
 - Put the MindDo token in the ignored .env file on this computer only.
 - Use Node.js 20.6 or newer and load the environment when starting the server, for example: node --env-file=.env server/index.cjs (once that server entry point exists).
 - Only server code may import this helper. Never include it in a browser or app bundle, return its key to a client, or log the key or token.
