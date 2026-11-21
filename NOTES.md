@@ -6,6 +6,7 @@ The available model with "luna" in its name is gpt-5.6-luna (verified through Op
 ## How to run
 
 - Expo Go SDK: **58**, confirmed by the student. Created using create-expo-app@latest with blank@sdk-58. Only change SDK when the phone's Expo Go changes.
+- Before opening on the phone, sign in to the same Expo account in Expo Go and on this computer. Run node node_modules/expo/bin/cli login --browser for computer sign-in; no password should be shared in chat. Check with node node_modules/expo/bin/cli whoami, then scan again. Expo reads sign-in updates without restarting the server.
 - Node.js LTS 24.22.3 and npm were installed for this Windows account without an admin password. Restart Codex if npm is not found. Tools: %LOCALAPPDATA%/Programs/MessageMinderTools/node-v24.22.3-win-x64.
 - Easiest: double-click **Start MessageMinder.cmd**. Both services start in the background and the QR page opens. Keep this computer awake and the phone on the same Wi-Fi.
 - Alternatively, use two terminals in this folder: npm run helper and npm start. On a fresh checkout, first run npm install and put MindDo settings in the ignored .env file.
