@@ -1,12 +1,55 @@
 After each save point, push it to GitHub.
 
 The AI key comes from getKey() in server/minddo-key.cjs.
-
 The available model with "luna" in its name is gpt-5.6-luna (verified through OpenAI's models endpoint on November 17, 2026).
 
-- Put the MindDo token in the ignored .env file on this computer only.
-- Use Node.js 20.6 or newer and load the environment when starting the server, for example: node --env-file=.env server/index.cjs (once that server entry point exists).
-- Only server code may import this helper. Never include it in a browser or app bundle, return its key to a client, or log the key or token.
-- Run OpenAI requests through withOpenAIKey(callback). It supplies the key only to the server callback and forgets keys rejected with HTTP 401 or invalid_api_key. The next request obtains a new key; failed requests are not retried automatically. Disable retries in any OpenAI SDK used by that callback.
-- Catch helper errors in the server route and show only error.message to the user. MindDo error.fix is logged only on the server, with known credentials removed.
-- expiresAt is expected to be an ISO date string. Confirm this format with MindDo if its response differs.
+## How to run
+
+- Expo Go SDK: **58**, confirmed by the student. Created using create-expo-app@latest with blank@sdk-58. Only change SDK when the phone's Expo Go changes.
+- Node.js LTS 24.22.3 and npm were installed for this Windows account without an admin password. Restart Codex if npm is not found. Tools: %LOCALAPPDATA%/Programs/MessageMinderTools/node-v24.22.3-win-x64.
+- Easiest: double-click **Start MessageMinder.cmd**. Both services start in the background and the QR page opens. Keep this computer awake and the phone on the same Wi-Fi.
+- Alternatively, use two terminals in this folder: npm run helper and npm start. On a fresh checkout, first run npm install and put MindDo settings in the ignored .env file.
+- QR page: http://127.0.0.1:8765/connect. QR regenerates when Expo starts. Current phone URL: exp://192.168.86.31:8081 (November 21, 2026; address can change).
+- Helper: port 8765. Expo: port 8081, LAN, live reload enabled. Background logs are in ignored .expo/. The one-click launcher keeps services running after its terminal closes; restarting the computer stops them.
+- The native app finds the helper through Expo's LAN address. If needed, set EXPO_PUBLIC_HELPER_URL to the helper's LAN URL before launching Expo. This public setting must never contain a key. Expo's start script does not load .env.
+- An Expo tunnel alone will not expose the helper. Use the same Wi-Fi for this version; if that cannot work, ask Codex to set up a protected HTTPS helper first. Do not forward ports or expose this helper publicly.
+- If Windows asks about firewall access, allow the home/private network only.
+
+## What's done
+
+- BRIEF.md preserves the student's brief and guides scope and AI instructions.
+- MVP 1–2: paste a message or link, review a preview with common secrets removed, explicitly tap Check with AI. Real AI starts with intent, explains warning signs, and offers safe next steps. Thinking… disables repeat submissions.
+- MVP 3: fixed recovery steps for sent money, shared passwords/codes, and clicked links, with an FTC source link.
+- MVP 4: save up to 30 local reports, review previews/explanations, and explicitly request new analysis. Delete saved reports on the phone. No reports go to authorities automatically.
+- MVP 5: simple scam signs and FTC source link.
+- MVP 6: every AI instruction from BRIEF.md accompanies each request, plus rules against harmful requests and false safety guarantees. Real checks passed for a bank scam, ordinary message, and malicious instruction. Future answers are not guaranteed correct.
+- Validation: Expo Doctor 20/20; Android, iOS and web bundles built; privacy checks passed; invalid/oversized inputs and foreign browser origins rejected; desktop check → result → save → reload → report review verified. Physical phone use still needs the student's scan check.
+
+## Privacy and boundaries
+
+- Only server files use getKey(). The small AI caller is server/ask-openai.cjs. Key and token stay on the computer; never return or print them. .env and .env* are ignored.
+- withOpenAIKey forgets keys rejected with 401/invalid_api_key. The next submission obtains a new key; no failed AI request is automatically retried.
+- Show getKey() error.message to the user; error.fix is logged only on the server with known credentials removed. Other failures show a friendly Wi-Fi/helper message.
+- Links are analyzed as text and domain clues, without opening them or verifying the sender.
+- Redaction cannot catch every private detail. Review and remove names, addresses, passwords, codes and account details before sending or saving.
+- Submitted previews go through the computer to OpenAI. The helper does not log or save messages. store:false is requested, but does not promise no provider retention. Reports store reviewed previews and explanations locally, not encrypted; do not save sensitive details.
+- This LAN helper is for a personal demonstration on trusted Wi-Fi, not a protected public service. The local desktop preview origin is allowed; other browser origins are rejected.
+- expiresAt is expected to be an ISO date string; confirm with MindDo if its format changes.
+- npm audit reports three moderate findings in Expo fingerprint/minimatch tooling. Its proposed automatic fix downgrades to SDK 52, so it was not applied. Recheck for a compatible fix before wider distribution.
+
+## What's next
+
+Scan the QR with Expo Go SDK 58 and check the phone experience. Record a short demo with fictional messages. Have a teacher review safety and competition evidence before submission. Dates and research claims in BRIEF.md are student-supplied and were not reverified during this build.
+
+## Maybe Later
+
+- The user can access a list of recent scams to stay informed.
+- The user can receive notifications about new scam types.
+- The user can filter messages by categories like email, social media, or texts.
+- The user can view a glossary of terms related to internet safety.
+- The user can practice identifying scams through interactive quizzes.
+- The user can share information about scams with friends or family easily.
+- The user can enable a safety feature to warn before sharing personal details.
+- The user can set reminders for regular safety checks on their devices.
+- The user can receive encouragement messages after reporting a scam.
+- The user can access a help section for additional support or resources.
