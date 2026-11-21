@@ -1,7 +1,7 @@
 After each save point, push it to GitHub.
 
 The AI key comes from getKey() in server/minddo-key.cjs.
-The available model with "luna" in its name is gpt-5.6-luna (verified through OpenAI's models endpoint on November 17, 2026).
+The available model with "luna" in its name is gpt-5.6-luna (verified through OpenAI's models endpoint on November 21, 2026).
 
 ## How to run
 
