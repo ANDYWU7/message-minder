@@ -26,6 +26,8 @@ The available model with "luna" in its name is gpt-5.6-luna (verified through Op
 
 ## What's done
 
+- The Check screen accepts a JPG or PNG screenshot up to about 2.7 MB. Review the image before sending it to OpenAI to analyze visible text and layout. Crop or cover private details first. The app saves only the explanation in screenshot reports.
+
 - BRIEF.md preserves the student's brief and guides scope and AI instructions.
 - MVP 1–2: paste a message or link, review a preview with common secrets removed, explicitly tap Check with AI. Real AI starts with intent, explains warning signs, and offers safe next steps. Thinking… disables repeat submissions.
 - MVP 3: fixed recovery steps for sent money, shared passwords/codes, and clicked links, with an FTC source link.

@@ -1,7 +1,7 @@
 const { askOpenAI } = require('../server/ask-openai.cjs');
 const { getKey } = require('../server/minddo-key.cjs');
 
-const maxRequestBytes = 32000;
+const maxRequestBytes = 3_640_000;
 const webUnavailable = 'I couldn’t check this message. Try again in a moment.';
 
 function send(response, status, body) {
@@ -56,7 +56,12 @@ module.exports = async function analyze(request, response, unavailable = webUnav
   }
 
   const message = typeof body?.message === 'string' ? body.message.trim() : '';
-  if (!message) return send(response, 400, { error: 'Enter a message to check.' });
+  const screenshot = body?.screenshot;
+  if (screenshot !== undefined && (
+    typeof screenshot !== 'string' || screenshot.length > 3_600_023 ||
+    !/^data:(?:image\/jpeg;base64,\/9j\/|image\/png;base64,iVBORw0KGgo)[A-Za-z0-9+/]*={0,2}$/.test(screenshot)
+  )) return send(response, 400, { error: 'Choose a smaller JPG or PNG screenshot.' });
+  if (!message && !screenshot) return send(response, 400, { error: 'Enter a message or add a screenshot to check.' });
   if (message.length > 8000) return send(response, 413, tooLarge);
 
   try {
@@ -66,7 +71,7 @@ module.exports = async function analyze(request, response, unavailable = webUnav
   }
 
   try {
-    return send(response, 200, await askOpenAI(message));
+    return send(response, 200, await askOpenAI(message, screenshot));
   } catch {
     return send(response, 502, { error: unavailable });
   }

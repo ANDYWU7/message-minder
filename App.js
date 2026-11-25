@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Linking, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Linking, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, TextInput, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
@@ -47,6 +48,7 @@ function Screen() {
   const [tab, setTab] = useState('Check');
   const [draft, setDraft] = useState('');
   const [preview, setPreview] = useState(null);
+  const [screenshot, setScreenshot] = useState(null);
   const [analysis, setAnalysis] = useState(null);
   const [report, setReport] = useState(null);
   const [reports, setReports] = useState([]);
@@ -77,8 +79,28 @@ function Screen() {
     setReport(null);
   }
 
+  async function chooseScreenshot() {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'], base64: true, quality: 0.9,
+      });
+      if (result.canceled) return;
+      const data = result.assets[0]?.base64;
+      const mime = data?.startsWith('/9j/') ? 'image/jpeg' :
+        data?.startsWith('iVBORw0KGgo') ? 'image/png' : null;
+      if (!mime || data.length > 3_600_000) {
+        setError('Choose a smaller JPG or PNG screenshot (up to about 2.7 MB).');
+        return;
+      }
+      edit(draft);
+      setScreenshot('data:' + mime + ';base64,' + data);
+    } catch {
+      setError('Couldn’t open that screenshot. Try choosing it again.');
+    }
+  }
+
   async function analyze() {
-    if (checking.current || !preview) return;
+    if (checking.current || preview === null || (!preview && !screenshot)) return;
     checking.current = true;
     setBusy(true);
     setError('');
@@ -97,7 +119,7 @@ function Screen() {
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: preview }),
+        body: JSON.stringify({ message: preview, ...(screenshot && { screenshot }) }),
         signal: controller.signal,
       });
       const body = await response.json();
@@ -122,7 +144,7 @@ function Screen() {
       const existing = JSON.parse((await AsyncStorage.getItem(REPORTS_KEY)) ?? '[]');
       const tags = [...new Set(analysis.warnings.map(({ sign }) => sign))];
       const date = new Date().toISOString();
-      await AsyncStorage.setItem(REPORTS_KEY, JSON.stringify([{ date, tags, message: preview, analysis }, ...existing].slice(0, 30)));
+      await AsyncStorage.setItem(REPORTS_KEY, JSON.stringify([{ date, tags, message: screenshot ? null : preview, analysis }, ...existing].slice(0, 30)));
       setReport({ analysis, saved: true, message: isWeb ? 'Report saved in this browser.' : 'Report saved on this phone.' });
     } catch {
       setReport({ analysis, saved: false, message: 'Couldn’t save the report. Try again.' });
@@ -146,7 +168,7 @@ function Screen() {
     <ScrollView key={tab} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       {tab === 'Check' && <>
         <Text accessibilityRole="header" style={styles.title}>Does this look like a scam?</Text>
-        <Text style={styles.body}>Paste a message or link from a text, email, or social app. See what it’s asking for and what to do next.</Text>
+          <Text style={styles.body}>Paste a message or link, or add a screenshot. See what it’s asking for and what to do next.</Text>
         <View style={styles.card}>
           <Text style={styles.heading}>Message or link</Text>
           <Text style={styles.body}>Remove names, addresses, passwords, codes, and account details before sending.</Text>
@@ -156,17 +178,23 @@ function Screen() {
           <TextInput accessibilityLabel="Message or link" style={styles.input} multiline maxLength={2000}
             value={draft} onChangeText={edit} editable={!busy} autoCorrect={false} autoCapitalize="none"
             placeholder="Paste it here" placeholderTextColor="#526677" />
+          <Button label={screenshot ? 'Choose another screenshot' : 'Add screenshot'} secondary disabled={busy} onPress={chooseScreenshot} />
+          {screenshot && <>
+            <Image accessibilityLabel="Selected screenshot preview" source={{ uri: screenshot }} style={{ width: '100%', height: 260 }} resizeMode="contain" />
+            <Text style={styles.body}>Checking sends this image to OpenAI. Crop or cover private details before choosing it. The app can’t hide details in images for you.</Text>
+            <Button label="Remove screenshot" secondary disabled={busy} onPress={() => { setScreenshot(null); edit(draft); }} />
+          </>}
           {preview === null ?
-            <Button label="Review before sending" disabled={!draft.trim()} onPress={() => setPreview(redact(draft.trim()))} /> :
+            <Button label="Review before sending" disabled={!draft.trim() && !screenshot} onPress={() => setPreview(redact(draft.trim()))} /> :
             <>
               <Text style={styles.heading}>Preview for OpenAI</Text>
               <Text style={styles.body}>Check this preview for private details. Go back to the text box to remove anything we missed.</Text>
               <Text style={styles.body}>For links, the AI checks the website name and any message you include. It can’t confirm the site is safe.</Text>
-              <Text style={styles.preview}>{preview}</Text>
+              {!!preview && <Text style={styles.preview}>{preview}</Text>}
               {busy && <ActivityIndicator color="#15604F" />}
               <Button label={busy ? 'Thinking…' : 'Check with AI'} onPress={analyze} disabled={busy} />
             </>}
-          <Button label="Try an example" secondary disabled={busy} onPress={() => edit(sample)} />
+          <Button label="Try an example" secondary disabled={busy} onPress={() => { setScreenshot(null); edit(sample); }} />
           {!!error && <Text accessibilityRole="alert" style={styles.feedback}>{error}</Text>}
         </View>
         {!!analysis && <View style={styles.card}>
@@ -180,11 +208,13 @@ function Screen() {
           <Text accessibilityRole="header" style={styles.heading}>What to do next</Text>
           {analysis.nextSteps?.map((step, index) => <Text key={index} style={styles.body}>{index + 1}. {step}</Text>)}
           <Button label="I already clicked, shared, or paid" onPress={() => setTab('Get help')} />
+          {preview !== null && <>
           <Button label="Save a report for review" secondary onPress={saveReport} disabled={reportNotice?.saved} />
-          <Text style={styles.body}>{isWeb
+          <Text style={styles.body}>{screenshot ? 'Only the explanation is saved. The screenshot is left out of the report.' : isWeb
             ? 'Saves this preview and explanation in this browser for another review. Remove private details first. This doesn’t send a report to anyone.'
             : 'Saves this preview and explanation on this phone for another review. Remove private details first. This doesn’t send a report to the police or anyone else.'}</Text>
           {!!reportNotice && <Text accessibilityLiveRegion="polite" style={styles.feedback}>{reportNotice.message}</Text>}
+          </>}
         </View>}
       </>}
       {tab === 'Get help' && <>
@@ -209,7 +239,8 @@ function Screen() {
           <Text style={styles.body}>{tags.join(' · ') || 'No clear warning signs found'}</Text>
           {!!message && <Text style={styles.preview}>{message}</Text>}
           {!!savedAnalysis && <Text style={styles.body}>{savedAnalysis.intent}</Text>}
-          {!!message && <Button label="Review this report" onPress={() => { edit(message); setPreview(message); setAnalysis(savedAnalysis ?? null); setTab('Check'); }} />}
+          {!!message && <Button label="Review this report" disabled={busy} onPress={() => { setScreenshot(null); edit(message); setPreview(message); setAnalysis(savedAnalysis ?? null); setTab('Check'); }} />}
+          {!message && !!savedAnalysis && <Button label="Read saved explanation" disabled={busy} onPress={() => { setScreenshot(null); edit(''); setAnalysis(savedAnalysis); setTab('Check'); }} />}
           {tips.filter(([label]) => tags.includes(label)).map(([label, tip]) =>
             <Text key={label} style={styles.body}>{tip}</Text>)}
         </View>)}
