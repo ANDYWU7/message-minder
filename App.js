@@ -20,19 +20,19 @@ const tips = [
 ];
 const recovery = {
   'I sent money': [
-    'Call your bank or payment provider immediately using a number you know is real. Say it was a scam and ask if it can reverse the payment. Recovery isn’t guaranteed.',
-    'Keep receipts and screenshots as evidence. Stop replying and avoid paying anyone who promises to get your money back.',
-    'If you’re under 18, ask a trusted adult to help.',
+    'Call your bank or payment provider now. Use the number on your card or in the official app. Say it was a scam and ask if they can reverse the payment.',
+    'Save your receipts and screenshots.',
+    'Stop replying. Don’t pay anyone who offers to get your money back.',
   ],
   'I shared a password or code': [
-    'Open the real website or app yourself. Change your password right away. If you can’t sign in, use the service’s official account recovery.',
-    'Change the password on other accounts that used it. Sign out of other sessions, check the recovery details, and turn on two-step verification.',
-    'If it was a banking account, call the bank using a known number. If you’re under 18, ask a trusted adult to help.',
+    'Open the official app or website and change your password now. If you’re locked out, use its account recovery option.',
+    'Sign out of other devices. Check that the recovery email and phone number are yours, then turn on two-step verification.',
+    'Change that password anywhere else you used it. If it was for your bank, call the number on your card.',
   ],
   'I clicked a link': [
-    'Close the page. If you entered a password or sent money, choose the matching option above.',
-    'If you downloaded something, leave it unopened. Update your device and run a security scan if your device offers one. Ask someone you trust for help if you installed anything.',
-    'Check the real app or website for unexpected activity. You can do this without reopening the link.',
+    'Close the page. If you sent money or entered a password or code, pick that option above.',
+    'Leave any downloads unopened. Update your device and run a security scan if you can. If you installed anything, ask someone you trust for help.',
+    'Open the official app or website directly and check for activity you don’t recognize.',
   ],
 };
 
@@ -235,7 +235,7 @@ function Screen() {
       </>}
       {tab === 'Get help' && <>
         <Text accessibilityRole="header" style={styles.title}>What happened?</Text>
-        <Text style={styles.body}>Scams can happen to anyone. Choose what happened to see steps you can take now.</Text>
+        <Text style={styles.preview}>Take a breath. Scams can happen to anyone. Pick what happened below and start with step 1. If you’re under 18, ask a trusted adult to help.</Text>
         {Object.keys(recovery).map((label) => <Button key={label} label={label} onPress={() => setRecoveryType(label)} secondary={label !== recoveryType} />)}
         <View style={styles.card}>
           <Text accessibilityRole="header" style={styles.heading}>{recoveryType}</Text>
