@@ -34,6 +34,7 @@ The available model with "luna" in its name is gpt-5.6-luna (verified through Op
 - MVP 3: **Get help** starts with a calm reminder, then shows direct, numbered steps for sent money, shared passwords or codes, and clicked links. It includes an FTC source link.
 - Recovery check: all three choices showed numbered steps in the browser. The **I already clicked, shared, or paid** button on an AI result also opened **Get help**.
 - MVP 4: save up to 30 local reports, review previews/explanations, and explicitly request new analysis. Delete saved reports on the phone. No reports go to authorities automatically.
+- Reports check: a fictional message and link stayed saved after a browser reload. The saved link excluded its private query value, and reopening it allowed another AI check.
 - MVP 5: simple scam signs and FTC source link.
 - MVP 6: every AI instruction from BRIEF.md accompanies each request, plus rules against harmful requests and false safety guarantees. Real checks passed for a bank scam, ordinary message, and malicious instruction. Future answers are not guaranteed correct.
 - Validation: Expo Doctor 20/20; Android, iOS and web bundles built; privacy checks passed; invalid/oversized inputs and foreign browser origins rejected; desktop check → result → save → reload → report review verified. Physical phone use still needs the student's scan check.
