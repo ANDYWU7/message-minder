@@ -16,6 +16,14 @@ The available model with "luna" in its name is gpt-5.6-luna (verified through Op
 - An Expo tunnel alone will not expose the helper. Use the same Wi-Fi for this version; if that cannot work, ask Codex to set up a protected HTTPS helper first. Do not forward ports or expose this helper publicly.
 - If Windows asks about firewall access, allow the home/private network only.
 
+## Web and Vercel
+
+- On this computer, start the helper with `npm run helper`, then run `npx expo start --web` in a second terminal from this folder. Set `EXPO_NO_DOTENV=1` in the Expo terminal to keep the helper's local .env out of Expo's environment. Open the address Expo prints. The local browser uses the same AI endpoint as Vercel through Expo's local proxy.
+- To publish, import the MessageMinder GitHub repository in Vercel and use its root folder. The repo sets Node.js 24, the build command, the dist output folder, the page fallback, and the AI function. Leave the build settings at their defaults.
+- In the Vercel project, add `KEYGEN_URL` and `KEYGEN_TOKEN` under Settings → Environment Variables for Production. Add them to Preview as well if you want AI checks on preview deployments. Enter the values directly in Vercel. Use the exact names above and keep the token marked sensitive. Deploy or redeploy after saving them.
+- The deployed browser calls `/api/analyze` on the same site. The Vercel function reads the environment variables and uses getKey() on the server. Expo Go still connects to the local helper.
+- The web app fits within a 400-pixel frame that shrinks to fit smaller screens. Reports saved in the web version stay in that browser.
+
 ## What's done
 
 - BRIEF.md preserves the student's brief and guides scope and AI instructions.
@@ -28,13 +36,13 @@ The available model with "luna" in its name is gpt-5.6-luna (verified through Op
 
 ## Privacy and boundaries
 
-- Only server files use getKey(). The small AI caller is server/ask-openai.cjs. Key and token stay on the computer; never return or print them. .env and .env* are ignored.
+- Only server files use getKey(). The small AI caller is server/ask-openai.cjs. Key and token stay in the server process, whether local or on Vercel. .env and .env* are ignored.
 - withOpenAIKey forgets keys rejected with 401/invalid_api_key. The next submission obtains a new key; no failed AI request is automatically retried.
 - Show getKey() error.message to the user; error.fix is logged only on the server with known credentials removed. Other failures show a friendly Wi-Fi/helper message.
 - Links are analyzed as text and domain clues, without opening them or verifying the sender.
 - Redaction cannot catch every private detail. Review and remove names, addresses, passwords, codes and account details before sending or saving.
 - Submitted previews go through the computer to OpenAI. The helper does not log or save messages. store:false is requested, but does not promise no provider retention. Reports store reviewed previews and explanations locally, not encrypted; do not save sensitive details.
-- This LAN helper is for a personal demonstration on trusted Wi-Fi, not a protected public service. The local desktop preview origin is allowed; other browser origins are rejected.
+- Use the LAN helper on trusted Wi-Fi. The deployed AI route is public and can use your account's AI allowance. Vercel Firewall rate limiting or deployment protection can limit use for a shared demo.
 - expiresAt is expected to be an ISO date string; confirm with MindDo if its format changes.
 - npm audit reports three moderate findings in Expo fingerprint/minimatch tooling. Its proposed automatic fix downgrades to SDK 52, so it was not applied. Recheck for a compatible fix before wider distribution.
 

@@ -3,6 +3,10 @@
     "name": "MessageMinder",
     "slug": "message-minder",
     "version": "1.0.0",
-    "userInterfaceStyle": "light"
+    "userInterfaceStyle": "light",
+    "web": {
+      "bundler": "metro",
+      "output": "single"
+    }
   }
 }

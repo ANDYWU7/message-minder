@@ -1,14 +1,11 @@
 const http = require('node:http');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
-const { askOpenAI } = require('./ask-openai.cjs');
-const { getKey } = require('./minddo-key.cjs');
+const analyze = require('../api/analyze.js');
 
 const port = 8765;
 const unavailable = 'I couldn’t check this message. Check your Wi-Fi and make sure the AI helper is running, then try again.';
 let checking = false;
-const maxPreviewLength = 8000;
-const maxRequestBytes = 32000;
 
 function send(response, status, body) {
   response.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
@@ -31,41 +28,16 @@ async function handle(request, response) {
     } catch { return send(response, 404, {}); }
   }
   if (request.method === 'GET' && request.url === '/health') return send(response, 200, { ok: true });
-  if (request.method !== 'POST' || request.url !== '/analyze') return send(response, 404, {});
-  const contentType = request.headers['content-type']?.split(';')[0].trim().toLowerCase();
-  if ((request.headers.origin && !localPreview) || contentType !== 'application/json') {
+  const nativeCheck = request.method === 'POST' && request.url === '/analyze';
+  const webPreview = request.url === '/api/analyze' && request.socket.remoteAddress === '127.0.0.1';
+  if (!nativeCheck && !webPreview) return send(response, 404, {});
+  if (nativeCheck && request.headers.origin && !localPreview) {
     return send(response, 415, {});
   }
   if (checking) return send(response, 429, { error: 'The helper is checking another message. Try again in a moment.' });
   checking = true;
   try {
-    const chunks = [];
-    let size = 0;
-    for await (const chunk of request.iterator({ destroyOnReturn: false })) {
-      size += chunk.length;
-      if (size > maxRequestBytes) {
-        send(response, 413, { error: 'Please shorten the message and try again.' });
-        request.resume();
-        return;
-      }
-      chunks.push(chunk);
-    }
-    let message;
-    try {
-      const value = JSON.parse(Buffer.concat(chunks).toString('utf8'))?.message;
-      if (typeof value === 'string') message = value.trim();
-    } catch {
-      return send(response, 400, { error: 'The message could not be read. Try again.' });
-    }
-    if (!message || message.length > maxPreviewLength) {
-      return send(response, 400, { error: 'Enter a message or try a shorter one.' });
-    }
-    try {
-      await getKey();
-    } catch (error) {
-      return send(response, 503, { error: error.message });
-    }
-    send(response, 200, await askOpenAI(message));
+    await analyze(request, response, unavailable);
   } catch {
     if (!response.headersSent) send(response, 502, { error: unavailable });
   } finally {

@@ -7,6 +7,8 @@ import { redact } from './privacy.cjs';
 
 const REPORTS_KEY = 'message-minder-reports-v1';
 const helpError = 'I couldn’t check this message. Check your Wi-Fi and make sure the AI helper is running, then try again.';
+const webHelpError = 'I couldn’t check this message. Try again in a moment.';
+const isWeb = Platform.OS === 'web';
 const sample = 'Your bank account will be locked in 10 minutes. Verify your password at https://bank-alert.example/verify now.';
 const tips = [
   ['Pressure', 'Pause if a message threatens trouble or says an offer will disappear unless you act right away.'],
@@ -85,10 +87,14 @@ function Screen() {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 65000);
     try {
-      const host = Platform.OS === 'web' ? globalThis.location?.hostname : Constants.expoConfig?.hostUri?.split(':')[0];
-      const helper = process.env.EXPO_PUBLIC_HELPER_URL || (host && 'http://' + host + ':8765');
-      if (!helper) throw new Error();
-      const response = await fetch(helper + '/analyze', {
+      let endpoint = '/api/analyze';
+      if (!isWeb) {
+        const host = Constants.expoConfig?.hostUri?.split(':')[0];
+        const helper = process.env.EXPO_PUBLIC_HELPER_URL || (host && 'http://' + host + ':8765');
+        if (!helper) throw new Error();
+        endpoint = helper + '/analyze';
+      }
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: preview }),
@@ -96,12 +102,12 @@ function Screen() {
       });
       const body = await response.json();
       if (!response.ok) {
-        setError(typeof body.error === 'string' ? body.error : helpError);
+        setError(typeof body.error === 'string' ? body.error : (isWeb ? webHelpError : helpError));
         return;
       }
       setAnalysis(body);
     } catch {
-      setError(helpError);
+      setError(isWeb ? webHelpError : helpError);
     } finally {
       clearTimeout(timeout);
       checking.current = false;
@@ -117,7 +123,7 @@ function Screen() {
       const tags = [...new Set(analysis.warnings.map(({ sign }) => sign))];
       const date = new Date().toISOString();
       await AsyncStorage.setItem(REPORTS_KEY, JSON.stringify([{ date, tags, message: preview, analysis }, ...existing].slice(0, 30)));
-      setReport({ analysis, saved: true, message: 'Report saved on this phone.' });
+      setReport({ analysis, saved: true, message: isWeb ? 'Report saved in this browser.' : 'Report saved on this phone.' });
     } catch {
       setReport({ analysis, saved: false, message: 'Couldn’t save the report. Try again.' });
     } finally {
@@ -144,7 +150,9 @@ function Screen() {
         <View style={styles.card}>
           <Text style={styles.heading}>Message or link</Text>
           <Text style={styles.body}>Remove names, addresses, passwords, codes, and account details before sending.</Text>
-          <Text style={styles.body}>Only when you tap “Check with AI,” your preview goes through this computer to OpenAI. We don’t save checks on the computer.</Text>
+          <Text style={styles.body}>{isWeb
+            ? 'When you tap “Check with AI,” the server sends your preview to OpenAI.'
+            : 'Only when you tap “Check with AI,” your preview goes through this computer to OpenAI. We don’t save checks on the computer.'}</Text>
           <TextInput accessibilityLabel="Message or link" style={styles.input} multiline maxLength={2000}
             value={draft} onChangeText={edit} editable={!busy} autoCorrect={false} autoCapitalize="none"
             placeholder="Paste it here" placeholderTextColor="#526677" />
@@ -172,7 +180,9 @@ function Screen() {
           {analysis.nextSteps?.map((step, index) => <Text key={index} style={styles.body}>{index + 1}. {step}</Text>)}
           <Button label="I already clicked, shared, or paid" onPress={() => setTab('Get help')} />
           <Button label="Save a report for review" secondary onPress={saveReport} disabled={reportNotice?.saved} />
-          <Text style={styles.body}>Saves this preview and explanation on this phone for another review. Remove private details first. This doesn’t send a report to the police or anyone else.</Text>
+          <Text style={styles.body}>{isWeb
+            ? 'Saves this preview and explanation in this browser for another review. Remove private details first. This doesn’t send a report to anyone.'
+            : 'Saves this preview and explanation on this phone for another review. Remove private details first. This doesn’t send a report to the police or anyone else.'}</Text>
           {!!reportNotice && <Text accessibilityLiveRegion="polite" style={styles.feedback}>{reportNotice.message}</Text>}
         </View>}
       </>}
@@ -188,7 +198,9 @@ function Screen() {
       </>}
       {tab === 'Reports' && <>
         <Text accessibilityRole="header" style={styles.title}>Saved reports</Text>
-        <Text style={styles.body}>Review your saved previews and explanations. Reports stay on this phone. To ask the AI again, choose Review, then Check with AI.</Text>
+        <Text style={styles.body}>{isWeb
+          ? 'Reports stay in this browser. To ask the AI again, choose Review, then Check with AI.'
+          : 'Review your saved previews and explanations. Reports stay on this phone. To ask the AI again, choose Review, then Check with AI.'}</Text>
         {reportsError && <Text style={styles.feedback}>Couldn’t read saved reports.</Text>}
         {!reportsError && reports.length === 0 && <Text style={styles.preview}>No saved reports yet.</Text>}
         {reports.map(({ date, tags, message, analysis: savedAnalysis }, index) => <View key={date + index} style={styles.card}>
@@ -200,7 +212,7 @@ function Screen() {
           {tips.filter(([label]) => tags.includes(label)).map(([label, tip]) =>
             <Text key={label} style={styles.body}>{tip}</Text>)}
         </View>)}
-        {!!reports.length && <Button label="Delete saved reports from this phone" secondary onPress={async () => {
+        {!!reports.length && <Button label={isWeb ? 'Delete saved reports from this browser' : 'Delete saved reports from this phone'} secondary onPress={async () => {
           try { await AsyncStorage.removeItem(REPORTS_KEY); setReports([]); setReport(null); setReportsError(false); }
           catch { setReportsError(true); }
         }} />}
@@ -218,10 +230,17 @@ function Screen() {
 }
 
 export default function App() {
-  return <SafeAreaProvider><Screen /></SafeAreaProvider>;
+  const app = <SafeAreaProvider><Screen /></SafeAreaProvider>;
+  if (!isWeb) return app;
+
+  return <View style={styles.webBackground}>
+    <View style={styles.webFrame}>{app}</View>
+  </View>;
 }
 
 const styles = StyleSheet.create({
+  webBackground: { flex: 1, minHeight: 0, alignItems: 'center', backgroundColor: '#E7EBE9' },
+  webFrame: { flex: 1, minHeight: 0, width: '100%', maxWidth: 400, overflow: 'hidden', backgroundColor: '#F2F6F4' },
   safe: { flex: 1, backgroundColor: '#F2F6F4' },
   header: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 10, backgroundColor: '#E0EEE8' },
   brand: { color: '#143A31', fontSize: 24, fontWeight: '800', marginBottom: 8 },

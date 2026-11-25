@@ -1,0 +1,20 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
+  "buildCommand": "npx expo export -p web",
+  "outputDirectory": "dist",
+  "cleanUrls": true,
+  "fluid": true,
+  "functions": {
+    "api/analyze.js": {
+      "includeFiles": "BRIEF.md",
+      "maxDuration": 65
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/((?!(?:api|_expo|assets)(?:/|$)).*)",
+      "destination": "/"
+    }
+  ]
+}
