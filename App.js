@@ -36,12 +36,28 @@ const recovery = {
   ],
 };
 
-function Button({ label, onPress, disabled, secondary }) {
-  return <Pressable accessibilityRole="button" accessibilityState={{ disabled: !!disabled }}
+function Button({ label, onPress, disabled, secondary, expanded }) {
+  return <Pressable accessibilityRole="button" accessibilityState={{ disabled: !!disabled }} aria-expanded={expanded}
     disabled={disabled} onPress={onPress}
     style={({ pressed }) => [styles.button, secondary && styles.secondary, (disabled || pressed) && styles.dim]}>
     <Text style={[styles.buttonText, secondary && styles.secondaryText]}>{label}</Text>
   </Pressable>;
+}
+
+function WarningDetails({ warnings }) {
+  const [expanded, setExpanded] = useState(false);
+  if (!warnings.length) return null;
+
+  return <>
+    <Button label={expanded ? 'Hide detailed warning signs' : 'Show detailed warning signs'}
+      secondary expanded={expanded} onPress={() => setExpanded(!expanded)} />
+    {expanded && <>
+      <Text accessibilityRole="header" style={styles.heading}>Warning signs</Text>
+      {warnings.map(({ sign, reason }, index) =>
+        <Text key={index} style={styles.body}><Text style={styles.bold}>{sign}. </Text>{reason}</Text>
+      )}
+    </>}
+  </>;
 }
 
 function Screen() {
@@ -198,16 +214,16 @@ function Screen() {
           {!!error && <Text accessibilityRole="alert" style={styles.feedback}>{error}</Text>}
         </View>
         {!!analysis && <View style={styles.card}>
-          <Text accessibilityRole="header" style={styles.heading}>What it appears to ask for</Text>
+          <Text accessibilityRole="header" style={styles.heading}>Quick overview</Text>
           <Text style={styles.body}>{analysis.intent}</Text>
-          <Text accessibilityRole="header" style={styles.heading}>Warning signs</Text>
-          {analysis.warnings.length ? analysis.warnings.map(({ sign, reason }, index) =>
-            <Text key={index} style={styles.body}><Text style={styles.bold}>{sign}. </Text>{reason}</Text>) :
-            <Text style={styles.body}>There isn’t enough evidence here to verify this message.</Text>}
+          <Text style={styles.body}>{analysis.overview || (analysis.warnings.length
+            ? 'This could be a scam. Open the warning signs to see which clues stood out.'
+            : 'There isn’t enough evidence here to verify this message.')}</Text>
           <Text style={styles.preview}>AI can miss scams. Before replying, clicking, or paying, verify through a website or number you already trust.</Text>
           <Text accessibilityRole="header" style={styles.heading}>What to do next</Text>
           {analysis.nextSteps?.map((step, index) => <Text key={index} style={styles.body}>{index + 1}. {step}</Text>)}
           <Button label="I already clicked, shared, or paid" onPress={() => setTab('Get help')} />
+          <WarningDetails warnings={analysis.warnings} />
           {preview !== null && <>
           <Button label="Save a report for review" secondary onPress={saveReport} disabled={reportNotice?.saved} />
           <Text style={styles.body}>{screenshot ? 'Only the explanation is saved. The screenshot is left out of the report.' : isWeb

@@ -30,7 +30,7 @@ The available model with "luna" in its name is gpt-5.6-luna (verified through Op
 
 - BRIEF.md preserves the student's brief and guides scope and AI instructions.
 - MVP 1–2: paste a message or link, review a preview with common secrets removed, explicitly tap Check with AI. Real AI starts with intent, explains warning signs, and offers safe next steps. Thinking… disables repeat submissions.
-- Each warning explains the clue and why it matters. For example, a short deadline can rush someone into acting before they check who sent the message.
+- The result starts with a quick overview in everyday words and keeps the next steps visible. Use **Show detailed warning signs** to read each clue and why it matters. Saved reports from before the overview was added can still be opened and expanded.
 - MVP 3: fixed recovery steps for sent money, shared passwords/codes, and clicked links, with an FTC source link.
 - MVP 4: save up to 30 local reports, review previews/explanations, and explicitly request new analysis. Delete saved reports on the phone. No reports go to authorities automatically.
 - MVP 5: simple scam signs and FTC source link.
