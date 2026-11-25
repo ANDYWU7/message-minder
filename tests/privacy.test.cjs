@@ -19,3 +19,18 @@ test('rechecking a reviewed preview preserves its warning clues', () => {
   assert.equal(redact(preview), preview);
   assert.ok(preview.includes('10 minutes'));
 });
+
+test('removes private values from a link pasted without https', () => {
+  const link = 'bank-alert.example/verify?email=student@example.com&token=fictional-demo#private';
+  assert.equal(redact(link), '[link domain: bank-alert[.]example]');
+  assert.equal(redact('Go to ' + link), 'Go to [link domain: bank-alert[.]example]');
+  assert.equal(redact('bank-alert.example'), '[link domain: bank-alert[.]example]');
+  assert.equal(redact('//bank-alert.example/verify?password=private'), '[link domain: bank-alert[.]example]');
+  assert.equal(redact('Password: private.example'), 'Password: [removed]');
+});
+
+test('reads the host before the path even when the rest has an at sign', () => {
+  const link = 'HTTPS://bank-alert.example/reset?email=student@example.com';
+  assert.equal(redact(link), '[link domain: bank-alert[.]example]');
+  assert.equal(redact('Contact student@www.example.com'), 'Contact [email removed]');
+});

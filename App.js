@@ -161,6 +161,7 @@ function Screen() {
             <>
               <Text style={styles.heading}>Preview for OpenAI</Text>
               <Text style={styles.body}>Check this preview for private details. Go back to the text box to remove anything we missed.</Text>
+              <Text style={styles.body}>For links, the AI checks the website name and any message you include. It can’t confirm the site is safe.</Text>
               <Text style={styles.preview}>{preview}</Text>
               {busy && <ActivityIndicator color="#15604F" />}
               <Button label={busy ? 'Thinking…' : 'Check with AI'} onPress={analyze} disabled={busy} />

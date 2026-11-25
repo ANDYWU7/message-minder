@@ -39,7 +39,7 @@ The available model with "luna" in its name is gpt-5.6-luna (verified through Op
 - Only server files use getKey(). The small AI caller is server/ask-openai.cjs. Key and token stay in the server process, whether local or on Vercel. .env and .env* are ignored.
 - withOpenAIKey forgets keys rejected with 401/invalid_api_key. The next submission obtains a new key; no failed AI request is automatically retried.
 - Show getKey() error.message to the user; error.fix is logged only on the server with known credentials removed. Other failures show a friendly Wi-Fi/helper message.
-- Links are analyzed as text and domain clues, without opening them or verifying the sender.
+- Links with or without https:// are analyzed using the website name and any surrounding message. The preview removes link paths, query values and fragments. The AI does not visit the site or verify its safety.
 - Redaction cannot catch every private detail. Review and remove names, addresses, passwords, codes and account details before sending or saving.
 - Submitted previews go through the computer to OpenAI. The helper does not log or save messages. store:false is requested, but does not promise no provider retention. Reports store reviewed previews and explanations locally, not encrypted; do not save sensitive details.
 - Use the LAN helper on trusted Wi-Fi. The deployed AI route is public and can use your account's AI allowance. Vercel Firewall rate limiting or deployment protection can limit use for a shared demo.
