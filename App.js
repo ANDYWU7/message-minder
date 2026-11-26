@@ -105,10 +105,12 @@ function Screen() {
   const [reportsError, setReportsError] = useState(false);
   const [reportLinkError, setReportLinkError] = useState('');
   const [recoveryType, setRecoveryType] = useState('I sent money');
-  const [busy, setBusy] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [savingNow, setSavingNow] = useState(false);
   const [error, setError] = useState('');
   const checking = useRef(false);
   const saving = useRef(false);
+  const busy = analyzing || savingNow;
   const reportNotice = report?.analysis === analysis ? report : null;
 
   useEffect(() => {
@@ -151,9 +153,9 @@ function Screen() {
   }
 
   async function analyze() {
-    if (checking.current || preview === null || (!preview && !screenshot)) return;
+    if (checking.current || saving.current || preview === null || (!preview && !screenshot)) return;
     checking.current = true;
-    setBusy(true);
+    setAnalyzing(true);
     setError('');
     setAnalysis(null);
     setReport(null);
@@ -185,23 +187,27 @@ function Screen() {
     } finally {
       clearTimeout(timeout);
       checking.current = false;
-      setBusy(false);
+      setAnalyzing(false);
     }
   }
 
   async function saveReport() {
-    if (saving.current || !analysis || reportNotice?.saved) return;
+    if (saving.current || checking.current || !analysis || preview === null) return;
     saving.current = true;
+    setSavingNow(true);
     try {
       const existing = JSON.parse((await AsyncStorage.getItem(REPORTS_KEY)) ?? '[]');
       const tags = [...new Set(analysis.warnings.map(({ sign }) => sign))];
       const date = new Date().toISOString();
       await AsyncStorage.setItem(REPORTS_KEY, JSON.stringify([{ date, tags, message: screenshot ? null : preview, analysis }, ...existing].slice(0, 30)));
-      setReport({ analysis, saved: true, message: isWeb ? 'Report saved in this browser.' : 'Report saved on this phone.' });
+      edit('');
+      setScreenshot(null);
+      setReport({ saved: true, message: 'Report saved. Find it in Reports.' });
     } catch {
       setReport({ analysis, saved: false, message: 'Couldn’t save the report. Try again.' });
     } finally {
       saving.current = false;
+      setSavingNow(false);
     }
   }
 
@@ -225,33 +231,36 @@ function Screen() {
     <ScrollView key={tab} keyboardShouldPersistTaps="handled" contentContainerStyle={styles.content}>
       {tab === 'Check' && <>
         <Text accessibilityRole="header" style={styles.title}>Does this look like a scam?</Text>
-          <Text style={styles.body}>Paste a message or link, or add a screenshot. See what it’s asking for and what to do next.</Text>
+        {report?.saved && <View style={styles.card} accessibilityLiveRegion="polite">
+          <Text style={styles.heading}>{report.message}</Text>
+          <Button label="View reports" secondary onPress={() => setTab('Reports')} />
+        </View>}
         <View style={styles.card}>
           <Text style={styles.heading}>Message or link</Text>
-          <Text style={styles.body}>Remove names, addresses, passwords, codes, and account details before sending.</Text>
-          <Text style={styles.body}>{isWeb
-            ? 'When you tap “Check with AI,” the server sends your preview to OpenAI.'
-            : 'Only when you tap “Check with AI,” your preview goes through this computer to OpenAI. We don’t save checks on the computer.'}</Text>
           <TextInput accessibilityLabel="Message or link" style={styles.input} multiline maxLength={2000}
             value={draft} onChangeText={edit} editable={!busy} autoCorrect={false} autoCapitalize="none"
             placeholder="Paste it here" placeholderTextColor="#526677" />
-          <Button label={screenshot ? 'Choose another screenshot' : 'Add screenshot'} secondary disabled={busy} onPress={chooseScreenshot} />
+          <View style={styles.actionRow}>
+            <View style={styles.actionItem}>
+              <Button label={screenshot ? 'Replace screenshot' : 'Add screenshot'} secondary disabled={busy} onPress={chooseScreenshot} />
+            </View>
+            <View style={styles.actionItem}>
+              <Button label="Try an example" secondary disabled={busy} onPress={() => { setScreenshot(null); edit(sample); }} />
+            </View>
+          </View>
           {screenshot && <>
             <Image accessibilityLabel="Selected screenshot preview" source={{ uri: screenshot }} style={{ width: '100%', height: 260 }} resizeMode="contain" />
-            <Text style={styles.body}>Checking sends this image to OpenAI. Crop or cover private details before choosing it. The app can’t hide details in images for you.</Text>
             <Button label="Remove screenshot" secondary disabled={busy} onPress={() => { setScreenshot(null); edit(draft); }} />
           </>}
           {preview === null ?
             <Button label="Review before sending" disabled={!draft.trim() && !screenshot} onPress={() => setPreview(redact(draft.trim()))} /> :
             <>
               <Text style={styles.heading}>Preview for OpenAI</Text>
-              <Text style={styles.body}>Check this preview for private details. Go back to the text box to remove anything we missed.</Text>
-              <Text style={styles.body}>For links, the AI checks the website name and any message you include. It can’t confirm the site is safe.</Text>
+              <Text style={styles.body}>Remove names, passwords, codes, and other private details before sending. For screenshots, crop or cover them first.</Text>
               {!!preview && <Text style={styles.preview}>{preview}</Text>}
-              {busy && <ActivityIndicator color="#15604F" />}
-              <Button label={busy ? 'Thinking…' : 'Check with AI'} onPress={analyze} disabled={busy} />
+              {analyzing && <ActivityIndicator color="#15604F" />}
+              <Button label={analyzing ? 'Thinking…' : 'Check with AI'} onPress={analyze} disabled={busy} />
             </>}
-          <Button label="Try an example" secondary disabled={busy} onPress={() => { setScreenshot(null); edit(sample); }} />
           {!!error && <Text accessibilityRole="alert" style={styles.feedback}>{error}</Text>}
         </View>
         {!!analysis && <View style={styles.card}>
@@ -263,15 +272,15 @@ function Screen() {
           <Text style={styles.preview}>AI can miss scams. Before replying, clicking, or paying, verify through a website or number you already trust.</Text>
           <Text accessibilityRole="header" style={styles.heading}>What to do next</Text>
           {analysis.nextSteps?.map((step, index) => <Text key={index} style={styles.body}>{index + 1}. {step}</Text>)}
-          <Button label="I already clicked, shared, or paid" onPress={() => setTab('Get help')} />
-          <WarningDetails warnings={analysis.warnings} />
-          {preview !== null && <>
-          <Button label="Save a report for review" secondary onPress={saveReport} disabled={reportNotice?.saved} />
-          <Text style={styles.body}>{screenshot ? 'Only the explanation is saved. The screenshot is left out of the report.' : isWeb
-            ? 'Saves this preview and explanation in this browser for another review. Remove private details first. This doesn’t send a report to anyone.'
-            : 'Saves this preview and explanation on this phone for another review. Remove private details first. This doesn’t send a report to the police or anyone else.'}</Text>
-          {!!reportNotice && <Text accessibilityLiveRegion="polite" style={styles.feedback}>{reportNotice.message}</Text>}
-          </>}
+          <View style={styles.resultActions}>
+            <WarningDetails warnings={analysis.warnings} />
+            <Button label="I already clicked, shared, or paid" secondary onPress={() => setTab('Get help')} />
+            {preview !== null && <>
+              <Button label={savingNow ? 'Saving…' : 'Save a report for review'} onPress={saveReport} disabled={busy} />
+              <Text style={styles.body}>{screenshot ? 'Saves the explanation only.' : 'Saves the preview and explanation on this device.'}</Text>
+              {!!reportNotice && <Text accessibilityLiveRegion="polite" style={styles.feedback}>{reportNotice.message}</Text>}
+            </>}
+          </View>
         </View>}
       </>}
       {tab === 'Get help' && <>
@@ -350,6 +359,9 @@ const styles = StyleSheet.create({
   body: { fontSize: 17, color: '#29423C', lineHeight: 25 },
   bold: { fontWeight: '700' },
   card: { backgroundColor: '#FFFFFF', padding: 16, borderRadius: 18, gap: 12, borderWidth: 1, borderColor: '#CBDDD4' },
+  actionRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  actionItem: { flexGrow: 1, flexBasis: 128 },
+  resultActions: { borderTopWidth: 1, borderTopColor: '#CBDDD4', paddingTop: 12, gap: 8 },
   reportList: { gap: 6 },
   reportRow: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#CBDDD4' },
   reportToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, minHeight: 48 },

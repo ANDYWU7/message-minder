@@ -35,6 +35,7 @@ The available model with "luna" in its name is gpt-5.6-luna (verified through Op
 - Recovery check: all three choices showed numbered steps in the browser. The **I already clicked, shared, or paid** button on an AI result also opened **Get help**.
 - MVP 4: save up to 30 local reports, including the full AI response. Tap a timestamp to open it. New rows use the time the check was sent and older rows use the time they were saved. Text reports can be checked again. The Reports screen links to official U.S. FTC and FBI forms for users to fill out themselves.
 - Reports check: a fictional message and link stayed saved after a browser reload. The saved link excluded its private query value, and reopening it allowed another AI check.
+- The Check screen groups input tools together and shows privacy guidance at review. Saving a report clears the draft, screenshot and visible result after the save succeeds.
 - MVP 5: simple scam signs and FTC source link.
 - MVP 6: every AI instruction from BRIEF.md accompanies each request, plus rules against harmful requests and false safety guarantees. Real checks passed for a bank scam, ordinary message, and malicious instruction. Future answers are not guaranteed correct.
 - Validation: Expo Doctor 20/20; Android, iOS and web bundles built; privacy checks passed; invalid/oversized inputs and foreign browser origins rejected; desktop check → result → save → reload → report review verified. Physical phone use still needs the student's scan check.
