@@ -12,11 +12,16 @@ const webHelpError = 'I couldn’t check this message. Try again in a moment.';
 const isWeb = Platform.OS === 'web';
 const sample = 'Your bank account will be locked in 10 minutes. Verify your password at https://bank-alert.example/verify now.';
 const tips = [
-  ['Pressure', 'Pause if a message threatens trouble or says an offer will disappear unless you act right away.'],
-  ['Impersonation', 'A logo or familiar caller ID can be copied. Use a phone number or website you already know is real.'],
-  ['Unusual payment', 'A demand for gift cards, cryptocurrency, or a wire transfer is a major warning sign.'],
-  ['Private information', 'Be careful with unexpected requests for passwords, verification codes, or financial details.'],
-  ['Suspicious link', 'A fake account warning or invoice may try to get you to sign in. Open the official app yourself.'],
+  ['Pressure', 'A text says your account will close in 10 minutes unless you respond.',
+    'Pause. Check your account in the official app before you reply.'],
+  ['Impersonation', 'Someone texts from a new number, says they’re your cousin, and asks for money.',
+    'Call your cousin using the number you already have. Check with them before sending money.'],
+  ['Unusual payment', 'A caller says you owe a fine and asks you to pay it with gift cards.',
+    'Hang up. Keep the gift card numbers to yourself. If you’re worried about a real fine, look up the office’s official number.'],
+  ['Private information', 'Someone claiming to be from your bank asks you to read back a sign-in code.',
+    'Keep the code to yourself. If you’re worried about your account, call the number on your bank card.'],
+  ['Suspicious link', 'A delivery text asks you to tap a link and pay a small fee.',
+    'Skip the link. Check your order or tracking in the official store or delivery app.'],
 ];
 const recovery = {
   'I sent money': [
@@ -324,9 +329,10 @@ function Screen() {
       </>}
       {tab === 'Tips' && <>
         <Text accessibilityRole="header" style={styles.title}>Common scam signs</Text>
-        {tips.map(([label, tip]) => <View key={label} style={styles.card}>
+        {tips.map(([label, example, action]) => <View key={label} style={styles.card}>
           <Text accessibilityRole="header" style={styles.heading}>{label}</Text>
-          <Text style={styles.body}>{tip}</Text>
+          <Text style={styles.body}><Text style={styles.bold}>Example. </Text>{example}</Text>
+          <Text style={styles.body}><Text style={styles.bold}>What to do. </Text>{action}</Text>
         </View>)}
         <Button label="Source: FTC scam prevention guide" secondary onPress={() => Linking.openURL('https://consumer.ftc.gov/articles/how-avoid-scam').catch(() => setError('Couldn’t open the guide.'))} />
       </>}
