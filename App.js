@@ -12,15 +12,20 @@ const webHelpError = 'I couldn’t check this message. Try again in a moment.';
 const isWeb = Platform.OS === 'web';
 const sample = 'Your bank account will be locked in 10 minutes. Verify your password at https://bank-alert.example/verify now.';
 const tips = [
-  ['Pressure', 'A text says your account will close in 10 minutes unless you respond.',
+  ['Pressure', 'Threats and short deadlines can push you to act before you check.',
+    'A text says your account will close in 10 minutes unless you respond.',
     'Pause. Check your account in the official app before you reply.'],
-  ['Impersonation', 'Someone texts from a new number, says they’re your cousin, and asks for money.',
+  ['Impersonation', 'Scammers can pretend to be family, a business, or a government office. They can copy logos and fake caller ID.',
+    'Someone texts from a new number, says they’re your cousin, and asks for money.',
     'Call your cousin using the number you already have. Check with them before sending money.'],
-  ['Unusual payment', 'A caller says you owe a fine and asks you to pay it with gift cards.',
-    'Hang up. Keep the gift card numbers to yourself. If you’re worried about a real fine, look up the office’s official number.'],
-  ['Private information', 'Someone claiming to be from your bank asks you to read back a sign-in code.',
+  ['Unusual payment', 'Watch for unexpected demands to pay by gift card, cryptocurrency (like Bitcoin), or wire transfer.',
+    'A caller says you owe a fine and asks you to pay it with gift cards.',
+    'Pause before paying. Look up the office’s official number and call to check. Keep gift card numbers to yourself.'],
+  ['Private information', 'Be careful with unexpected requests for passwords, sign-in codes, or bank details.',
+    'Someone claiming to be from your bank asks you to read back a sign-in code.',
     'Keep the code to yourself. If you’re worried about your account, call the number on your bank card.'],
-  ['Suspicious link', 'A delivery text asks you to tap a link and pay a small fee.',
+  ['Suspicious link', 'Fake delivery notices, invoices, and account alerts can use links to get you to sign in or pay.',
+    'A delivery text asks you to tap a link and pay a small fee.',
     'Skip the link. Check your order or tracking in the official store or delivery app.'],
 ];
 const recovery = {
@@ -329,9 +334,10 @@ function Screen() {
       </>}
       {tab === 'Tips' && <>
         <Text accessibilityRole="header" style={styles.title}>Common scam signs</Text>
-        {tips.map(([label, example, action]) => <View key={label} style={styles.card}>
+        {tips.map(([label, warning, example, action]) => <View key={label} style={styles.card}>
           <Text accessibilityRole="header" style={styles.heading}>{label}</Text>
-          <Text style={styles.body}><Text style={styles.bold}>Example. </Text>{example}</Text>
+          <Text style={styles.body}>{warning}</Text>
+          <Text style={styles.body}><Text style={styles.bold}>One example. </Text>{example}</Text>
           <Text style={styles.body}><Text style={styles.bold}>What to do. </Text>{action}</Text>
         </View>)}
         <Button label="Source: FTC scam prevention guide" secondary onPress={() => Linking.openURL('https://consumer.ftc.gov/articles/how-avoid-scam').catch(() => setError('Couldn’t open the guide.'))} />
