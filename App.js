@@ -60,6 +60,40 @@ function WarningDetails({ warnings }) {
   </>;
 }
 
+function SavedReportRow({ entry, busy, onReview }) {
+  const [expanded, setExpanded] = useState(false);
+  const { date, tags, message, analysis } = entry;
+  const timestamp = new Date(analysis?.submittedAt || date).toLocaleString(undefined, {
+    dateStyle: 'medium', timeStyle: 'short',
+  });
+  const label = (analysis?.submittedAt ? 'Checked ' : 'Saved ') + timestamp;
+
+  return <View style={styles.reportRow}>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} aria-expanded={expanded}
+      onPress={() => setExpanded(!expanded)} style={({ pressed }) => [styles.reportToggle, pressed && styles.dim]}>
+      <Text style={[styles.body, styles.reportDate]} numberOfLines={1}>{label}</Text>
+      <Text style={styles.body} aria-hidden>{expanded ? '−' : '+'}</Text>
+    </Pressable>
+    {expanded && <View style={styles.reportDetails}>
+      {!!message && <Text style={styles.preview}>{message}</Text>}
+      {analysis ? <>
+        <Text accessibilityRole="header" style={styles.heading}>Saved AI explanation</Text>
+        <Text style={styles.body}>{analysis.intent}</Text>
+        {!!analysis.overview && <Text style={styles.body}>{analysis.overview}</Text>}
+        <Text accessibilityRole="header" style={styles.heading}>Warning signs</Text>
+        {analysis.warnings.length ? analysis.warnings.map(({ sign, reason }, index) =>
+          <Text key={index} style={styles.body}><Text style={styles.bold}>{sign}. </Text>{reason}</Text>
+        ) : <Text style={styles.body}>No clear warning signs found. The message still can’t be verified.</Text>}
+        {!!analysis.nextSteps?.length && <>
+          <Text accessibilityRole="header" style={styles.heading}>What to do next</Text>
+          {analysis.nextSteps.map((step, index) => <Text key={index} style={styles.body}>{index + 1}. {step}</Text>)}
+        </>}
+      </> : <Text style={styles.body}>{tags.join(' · ') || 'No clear warning signs found'}</Text>}
+      {!!message && <Button label="Open for another check" secondary disabled={busy} onPress={onReview} />}
+    </View>}
+  </View>;
+}
+
 function Screen() {
   const [tab, setTab] = useState('Check');
   const [draft, setDraft] = useState('');
@@ -69,6 +103,7 @@ function Screen() {
   const [report, setReport] = useState(null);
   const [reports, setReports] = useState([]);
   const [reportsError, setReportsError] = useState(false);
+  const [reportLinkError, setReportLinkError] = useState('');
   const [recoveryType, setRecoveryType] = useState('I sent money');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -132,6 +167,7 @@ function Screen() {
         if (!helper) throw new Error();
         endpoint = helper + '/analyze';
       }
+      const submittedAt = new Date().toISOString();
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -143,7 +179,7 @@ function Screen() {
         setError(typeof body.error === 'string' ? body.error : (isWeb ? webHelpError : helpError));
         return;
       }
-      setAnalysis(body);
+      setAnalysis({ ...body, submittedAt });
     } catch {
       setError(isWeb ? webHelpError : helpError);
     } finally {
@@ -167,6 +203,11 @@ function Screen() {
     } finally {
       saving.current = false;
     }
+  }
+
+  function openReportingSite(url) {
+    setReportLinkError('');
+    Linking.openURL(url).catch(() => setReportLinkError('Couldn’t open the reporting site. Try opening ' + url + ' in your browser.'));
   }
 
   return <SafeAreaView style={styles.safe}>
@@ -246,24 +287,31 @@ function Screen() {
       {tab === 'Reports' && <>
         <Text accessibilityRole="header" style={styles.title}>Saved reports</Text>
         <Text style={styles.body}>{isWeb
-          ? 'Reports stay in this browser. To ask the AI again, choose Review, then Check with AI.'
-          : 'Review your saved previews and explanations. Reports stay on this phone. To ask the AI again, choose Review, then Check with AI.'}</Text>
+          ? 'Tap a date to read the saved AI explanation. Reports stay in this browser.'
+          : 'Tap a date to read the saved AI explanation. Reports stay on this phone.'}</Text>
         {reportsError && <Text style={styles.feedback}>Couldn’t read saved reports.</Text>}
         {!reportsError && reports.length === 0 && <Text style={styles.preview}>No saved reports yet.</Text>}
-        {reports.map(({ date, tags, message, analysis: savedAnalysis }, index) => <View key={date + index} style={styles.card}>
-          <Text style={styles.heading}>{new Date(date).toLocaleString()}</Text>
-          <Text style={styles.body}>{tags.join(' · ') || 'No clear warning signs found'}</Text>
-          {!!message && <Text style={styles.preview}>{message}</Text>}
-          {!!savedAnalysis && <Text style={styles.body}>{savedAnalysis.intent}</Text>}
-          {!!message && <Button label="Review this report" disabled={busy} onPress={() => { setScreenshot(null); edit(message); setPreview(message); setAnalysis(savedAnalysis ?? null); setTab('Check'); }} />}
-          {!message && !!savedAnalysis && <Button label="Read saved explanation" disabled={busy} onPress={() => { setScreenshot(null); edit(''); setAnalysis(savedAnalysis); setTab('Check'); }} />}
-          {tips.filter(([label]) => tags.includes(label)).map(([label, tip]) =>
-            <Text key={label} style={styles.body}>{tip}</Text>)}
-        </View>)}
+        {!!reports.length && <View style={styles.reportList}>
+          {reports.map((entry, index) => <SavedReportRow key={entry.date + index} entry={entry} busy={busy}
+            onReview={() => {
+              setScreenshot(null);
+              edit(entry.message);
+              setPreview(entry.message);
+              setAnalysis(entry.analysis ?? null);
+              setTab('Check');
+            }} />)}
+        </View>}
         {!!reports.length && <Button label={isWeb ? 'Delete saved reports from this browser' : 'Delete saved reports from this phone'} secondary onPress={async () => {
           try { await AsyncStorage.removeItem(REPORTS_KEY); setReports([]); setReport(null); setReportsError(false); }
           catch { setReportsError(true); }
         }} />}
+        <View style={styles.card}>
+          <Text accessibilityRole="header" style={styles.heading}>Report a scam in the U.S.</Text>
+          <Text style={styles.body}>Choose an official site and fill out its form yourself. Your saved report stays here.</Text>
+          <Button label="Report fraud to the FTC" secondary onPress={() => openReportingSite('https://reportfraud.ftc.gov/')} />
+          <Button label="Report online crime to the FBI" secondary onPress={() => openReportingSite('https://complaint.ic3.gov/')} />
+          {!!reportLinkError && <Text accessibilityRole="alert" style={styles.feedback}>{reportLinkError}</Text>}
+        </View>
       </>}
       {tab === 'Tips' && <>
         <Text accessibilityRole="header" style={styles.title}>Common scam signs</Text>
@@ -302,6 +350,11 @@ const styles = StyleSheet.create({
   body: { fontSize: 17, color: '#29423C', lineHeight: 25 },
   bold: { fontWeight: '700' },
   card: { backgroundColor: '#FFFFFF', padding: 16, borderRadius: 18, gap: 12, borderWidth: 1, borderColor: '#CBDDD4' },
+  reportList: { gap: 6 },
+  reportRow: { backgroundColor: '#FFFFFF', borderRadius: 12, borderWidth: 1, borderColor: '#CBDDD4' },
+  reportToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 14, minHeight: 48 },
+  reportDate: { flex: 1, fontWeight: '700' },
+  reportDetails: { padding: 14, gap: 10, borderTopWidth: 1, borderTopColor: '#CBDDD4' },
   input: { borderWidth: 1, borderColor: '#6A8B81', borderRadius: 12, minHeight: 110, maxHeight: 200, textAlignVertical: 'top', padding: 12, fontSize: 17, color: '#162E29' },
   button: { minHeight: 48, borderRadius: 12, backgroundColor: '#15604F', justifyContent: 'center', paddingVertical: 10, paddingHorizontal: 14 },
   buttonText: { color: '#FFFFFF', textAlign: 'center', fontWeight: '700', fontSize: 16 },

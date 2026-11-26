@@ -33,7 +33,7 @@ The available model with "luna" in its name is gpt-5.6-luna (verified through Op
 - The result starts with a quick overview in everyday words and keeps the next steps visible. Use **Show detailed warning signs** to read each clue and why it matters. Saved reports from before the overview was added can still be opened and expanded.
 - MVP 3: **Get help** starts with a calm reminder, then shows direct, numbered steps for sent money, shared passwords or codes, and clicked links. It includes an FTC source link.
 - Recovery check: all three choices showed numbered steps in the browser. The **I already clicked, shared, or paid** button on an AI result also opened **Get help**.
-- MVP 4: save up to 30 local reports, review previews/explanations, and explicitly request new analysis. Delete saved reports on the phone. No reports go to authorities automatically.
+- MVP 4: save up to 30 local reports, including the full AI response. Tap a timestamp to open it. New rows use the time the check was sent and older rows use the time they were saved. Text reports can be checked again. The Reports screen links to official U.S. FTC and FBI forms for users to fill out themselves.
 - Reports check: a fictional message and link stayed saved after a browser reload. The saved link excluded its private query value, and reopening it allowed another AI check.
 - MVP 5: simple scam signs and FTC source link.
 - MVP 6: every AI instruction from BRIEF.md accompanies each request, plus rules against harmful requests and false safety guarantees. Real checks passed for a bank scam, ordinary message, and malicious instruction. Future answers are not guaranteed correct.
